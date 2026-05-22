@@ -2,33 +2,30 @@ import { useEffect, useState } from "react";
 import "./App.css";
 
 function App() {
+  const [customers, setCustomers] = useState([]);
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
 
-  const [customers, setCustomers] = useState(() => {
-    const savedCustomers = localStorage.getItem("customers");
-    return savedCustomers ? JSON.parse(savedCustomers) : [];
-  });
-
   const [search, setSearch] = useState("");
-  const [editIndex, setEditIndex] = useState(null);
+  const [editId, setEditId] = useState(null);
+
+  const API_URL = "http://localhost:3000/customers";
 
   useEffect(() => {
-    localStorage.setItem("customers", JSON.stringify(customers));
-  }, [customers]);
+    fetchCustomers();
+  }, []);
+
+  function fetchCustomers() {
+    fetch(API_URL)
+      .then((res) => res.json())
+      .then((data) => setCustomers(data))
+      .catch((error) => console.log("Error fetching customers:", error));
+  }
 
   function isValidEmail(email) {
     const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return regex.test(email);
-  }
-
-  function isDuplicateEmail(email, currentEditIndex = null) {
-    return customers.some((customer, index) => {
-      return (
-        customer.email.toLowerCase() === email.toLowerCase() && 
-        index !== currentEditIndex
-      );
-    });
   }
 
   function addCustomer() {
@@ -42,60 +39,66 @@ function App() {
       return;
     }
 
-    if(isDuplicateEmail(email, editIndex)) {
-      alert("This email already exists");
-      return;
-    }
-
-    const newCustomer = {
+    const customerData = {
       name: name,
       email: email,
     };
 
-    if (editIndex === null) {
-      setCustomers([...customers, newCustomer]);
+    if (editId === null) {
+      fetch(API_URL, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(customerData),
+      })
+        .then((res) => res.json())
+        .then(() => {
+          fetchCustomers();
+          setName("");
+          setEmail("");
+        })
+        .catch((error) => console.log("Error adding customer:", error));
     } else {
-      const updatedCustomers = customers.map((customer, index) => {
-        if (index === editIndex) {
-          return newCustomer;
-        } else {
-          return customer;
-        }
-      });
-
-      setCustomers(updatedCustomers);
-      setEditIndex(null);
+      fetch(`${API_URL}/${editId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(customerData),
+      })
+        .then((res) => res.json())
+        .then(() => {
+          fetchCustomers();
+          setName("");
+          setEmail("");
+          setEditId(null);
+        })
+        .catch((error) => console.log("Error updating customer:", error));
     }
-
-    setName("");
-    setEmail("");
   }
 
-  function deleteCustomer(indexToDelete) {
-    const updatedCustomers = customers.filter((customer, index) => {
-      return index !== indexToDelete;
-    });
-
-    setCustomers(updatedCustomers);
+  function deleteCustomer(id) {
+    fetch(`${API_URL}/${id}`, {
+      method: "DELETE",
+    })
+      .then((res) => res.json())
+      .then(() => fetchCustomers())
+      .catch((error) => console.log("Error deleting customer:", error));
   }
 
-  function editCustomer(indexToEdit) {
-    setName(customers[indexToEdit].name);
-    setEmail(customers[indexToEdit].email);
-    setEditIndex(indexToEdit);
+  function editCustomer(customer) {
+    setName(customer.name);
+    setEmail(customer.email);
+    setEditId(customer.id);
   }
 
-  const filteredCustomers = customers
-    .map((customer, index) => ({
-      ...customer,
-      originalIndex: index,
-    }))
-    .filter((customer) => {
-      return (
-        customer.name.toLowerCase().includes(search.toLowerCase()) ||
-        customer.email.toLowerCase().includes(search.toLowerCase())
-      );
-    });
+  const filteredCustomers = customers.filter((customer) => {
+    return (
+      customer.name.toLowerCase().includes(search.toLowerCase()) ||
+      customer.email.toLowerCase().includes(search.toLowerCase())
+    );
+  });
 
   return (
     <div className="container">
@@ -116,7 +119,7 @@ function App() {
       />
 
       <button onClick={addCustomer}>
-        {editIndex === null ? "Add Customer" : "Update Customer"}
+        {editId === null ? "Add Customer" : "Update Customer"}
       </button>
 
       <div className="preview">
@@ -145,16 +148,14 @@ function App() {
       ) : (
         <ul>
           {filteredCustomers.map((customer) => (
-            <li key={customer.originalIndex}>
+            <li key={customer.id}>
               <span>
                 <strong>{customer.name}</strong> - {customer.email}
               </span>
 
               <div>
-                <button onClick={() => editCustomer(customer.originalIndex)}>
-                  Edit
-                </button>
-                <button onClick={() => deleteCustomer(customer.originalIndex)}>
+                <button onClick={() => editCustomer(customer)}>Edit</button>
+                <button onClick={() => deleteCustomer(customer.id)}>
                   Delete
                 </button>
               </div>
