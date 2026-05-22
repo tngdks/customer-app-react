@@ -2,6 +2,7 @@
 
 A simple Customer Management App built with React.  
 This project allows users to add, edit, delete, and persist customer data using localStorage.
+This React app is connected to an Express.js backend API for customer CRUD operations.
 
 ## Features
 
