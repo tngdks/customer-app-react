@@ -22,6 +22,15 @@ function App() {
     return regex.test(email);
   }
 
+  function isDuplicateEmail(email, currentEditIndex = null) {
+    return customers.some((customer, index) => {
+      return (
+        customer.email.toLowerCase() === email.toLowerCase() && 
+        index !== currentEditIndex
+      );
+    });
+  }
+
   function addCustomer() {
     if (name.trim() === "" || email.trim() === "") {
       alert("Please enter name and email");
@@ -30,6 +39,11 @@ function App() {
 
     if (!isValidEmail(email)) {
       alert("Please enter a valid email address");
+      return;
+    }
+
+    if(isDuplicateEmail(email, editIndex)) {
+      alert("This email already exists");
       return;
     }
 
