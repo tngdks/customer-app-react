@@ -17,9 +17,19 @@ function App() {
     localStorage.setItem("customers", JSON.stringify(customers));
   }, [customers]);
 
+  function isValidEmail(email) {
+    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return regex.test(email);
+  }
+
   function addCustomer() {
     if (name.trim() === "" || email.trim() === "") {
       alert("Please enter name and email");
+      return;
+    }
+
+    if (!isValidEmail(email)) {
+      alert("Please enter a valid email address");
       return;
     }
 
