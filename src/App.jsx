@@ -10,7 +10,8 @@ function App() {
     return savedCustomers ? JSON.parse(savedCustomers) : [];
   });
 
-  const[editIndex, setEditIndex] = useState(null);
+  const [search, setSearch] = useState("");
+  const [editIndex, setEditIndex] = useState(null);
 
   useEffect(() => {
     localStorage.setItem("customers", JSON.stringify(customers));
@@ -60,6 +61,18 @@ function App() {
     setEditIndex(indexToEdit);
   }
 
+  const filteredCustomers = customers
+    .map((customer, index) => ({
+      ...customer,
+      originalIndex: index,
+    }))
+    .filter((customer) => {
+      return (
+        customer.name.toLowerCase().includes(search.toLowerCase()) ||
+        customer.email.toLowerCase().includes(search.toLowerCase())
+      );
+    });
+
   return (
     <div className="container">
       <h1>Customer App</h1>
@@ -92,21 +105,34 @@ function App() {
         </p>
       </div>
 
+      <input
+        type="text"
+        placeholder="Search customer..."
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
+      />
+
       <h3>Customer List</h3>
 
       {customers.length === 0 ? (
         <p>No customers added</p>
+      ) : filteredCustomers.length === 0 ? (
+        <p>No matching customers found</p>
       ) : (
         <ul>
-          {customers.map((customer, index) => (
-            <li key={index}>
+          {filteredCustomers.map((customer) => (
+            <li key={customer.originalIndex}>
               <span>
                 <strong>{customer.name}</strong> - {customer.email}
               </span>
 
               <div>
-                <button onClick={() => editCustomer(index)}>Edit</button>
-                <button onClick={() => deleteCustomer(index)}>Delete</button>
+                <button onClick={() => editCustomer(customer.originalIndex)}>
+                  Edit
+                </button>
+                <button onClick={() => deleteCustomer(customer.originalIndex)}>
+                  Delete
+                </button>
               </div>
             </li>
           ))}
